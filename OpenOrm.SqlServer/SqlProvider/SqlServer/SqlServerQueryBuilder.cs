@@ -678,6 +678,78 @@ namespace OpenOrm.SqlProvider.SqlServer
         #endregion
 
         #region Select
+
+        public List<T> SelectLimit<T>(OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false, int page = -1, int elements = -1)
+        {
+            if (cnx.Configuration.EnableRamCache && CoreTools.RamCache.Exists(CoreTools.RamCache.GetKey<T>())) return (List<T>)CoreTools.RamCache.Get(CoreTools.RamCache.GetKey<T>());
+            TableDefinition td = TableDefinition.Get<T>(cnx);
+
+            //if(cnx.Configuration.UseDatabaseSchema)
+            //{
+            //    if(!DbDefinition.Definitions.Any()) SqlServerDbDefinition.InitDbDefinition(cnx);
+            //    //if(!td.IsDbCacheInitialized) 
+            //}
+            //string fields = string.Join(",", OpenOrmTools.GetFieldNames<T>());
+            //string fields = $"[{string.Join("],[", td.Columns.Select(x => x.Name))}]";
+            //string sql = $"SELECT {fields} FROM {GetTableName<T>()};";
+            string sql = $"SELECT {td.GetFieldsStr()} FROM {GetTableName<T>()}";
+
+            if (page > 0 && elements > 0)
+            {
+                sql += $" LIMIT {elements} OFFSET {elements * (page - 1)} ;";
+            }
+            else
+            {
+                sql += ";";
+            }
+
+            SqlQuery sq = new SqlQuery(cnx, sql, SqlQueryType.Sql);
+            List<T> result = sq.ReadToObjectList<T>();
+
+            //Load nested objects/values
+            if ((((td.ContainsNestedColumns || td.ContainsForeignKeys) && forceLoadNestedObjects) || td.ContainsNestedColumnsAutoLoad || td.ContainsForeignKeysAutoLoad || cnx.Configuration.ForceAutoLoadNestedObjects) && result != null)
+            {
+                LoadNestedValues(cnx, forceLoadNestedObjects, ref result);
+            }
+
+            if (cnx.Configuration.EnableRamCache) CoreTools.RamCache.Set(CoreTools.RamCache.GetKey<T>(), result);
+            return result;
+        }
+
+        public List<T> SelectLimit<T>(OpenOrmDbConnection cnx, Expression<Func<T, bool>> predicate, bool forceLoadNestedObjects = false, int page = -1, int elements = -1)
+        {
+            if (cnx.Configuration.EnableRamCache && CoreTools.RamCache.Exists(CoreTools.RamCache.GetKey<T>(predicate))) return (List<T>)CoreTools.RamCache.Get(CoreTools.RamCache.GetKey<T>(predicate));
+            TableDefinition td = TableDefinition.Get<T>(cnx);
+            //string fields = string.Join(",", OpenOrmTools.GetFieldNames<T>());
+            string sql = $"SELECT {td.GetFieldsStr()} FROM {GetTableName<T>()} ";
+
+            if (page > 0 && elements > 0)
+            {
+                sql += $" LIMIT {elements} OFFSET {elements * (page - 1)} ";
+            }
+
+            string whereClause = predicate.ToSqlWhere(td, out List<SqlParameterItem> Parameters);
+
+            SqlQuery sq = new SqlQuery(cnx, sql, SqlQueryType.Sql);
+
+            if (Parameters.Any() || !string.IsNullOrEmpty(whereClause))
+            {
+                sql += $"WHERE {whereClause}";
+                sq.Sql = sql;
+                Parameters.ForEach(x => sq.AddParameter(x.Name, x.Value, x.SqlDbType));
+            }
+
+            List<T> result = sq.ReadToObjectList<T>();
+
+            //Load nested objects/values
+            if ((((td.ContainsNestedColumns || td.ContainsForeignKeys) && forceLoadNestedObjects) || td.ContainsNestedColumnsAutoLoad || td.ContainsForeignKeysAutoLoad || cnx.Configuration.ForceAutoLoadNestedObjects) && result != null)
+            {
+                LoadNestedValues(cnx, forceLoadNestedObjects, ref result);
+            }
+
+            if (cnx.Configuration.EnableRamCache) CoreTools.RamCache.Set(CoreTools.RamCache.GetKey<T>(predicate), result);
+            return result;
+        }
         public List<T> Select<T>(OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false)
         {
             if (cnx.Configuration.EnableRamCache && CoreTools.RamCache.Exists(CoreTools.RamCache.GetKey<T>())) return (List<T>)CoreTools.RamCache.Get(CoreTools.RamCache.GetKey<T>());
@@ -692,6 +764,7 @@ namespace OpenOrm.SqlProvider.SqlServer
             //string fields = $"[{string.Join("],[", td.Columns.Select(x => x.Name))}]";
             //string sql = $"SELECT {fields} FROM {GetTableName<T>()};";
             string sql = $"SELECT {td.GetFieldsStr()} FROM {GetTableName<T>()};";
+
             SqlQuery sq = new SqlQuery(cnx, sql, SqlQueryType.Sql);
             List<T> result = sq.ReadToObjectList<T>();
 
@@ -711,6 +784,7 @@ namespace OpenOrm.SqlProvider.SqlServer
             TableDefinition td = TableDefinition.Get<T>(cnx);
             //string fields = string.Join(",", OpenOrmTools.GetFieldNames<T>());
             string sql = $"SELECT {td.GetFieldsStr()} FROM {GetTableName<T>()} ";
+
             string whereClause = predicate.ToSqlWhere(td, out List<SqlParameterItem> Parameters);
 
             SqlQuery sq = new SqlQuery(cnx, sql, SqlQueryType.Sql);

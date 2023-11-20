@@ -450,12 +450,75 @@ namespace OpenOrm.SqlProvider.SQLite
         #endregion
 
         #region Select
+
+        public List<T> SelectLimit<T>(OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false, int page = -1, int elements = -1)
+        {
+            if (cnx.Configuration.EnableRamCache && RamCache.Exists(RamCache.GetKey<T>())) return (List<T>)RamCache.Get(RamCache.GetKey<T>());
+
+            TableDefinition td = TableDefinition.Get<T>(cnx);
+            string sql = $"SELECT {td.GetFieldsStr()} FROM {GetTableName<T>()}";
+
+            if (page > 0 && elements > 0)
+            {
+                sql += $" LIMIT {elements} OFFSET {elements * (page - 1)} ;";
+            }
+            else
+            {
+                sql += ";";
+            }
+
+            SqlQuery sq = new SqlQuery(cnx, sql, SqlQueryType.Sql);
+            List<T> result = sq.ReadToObjectList<T>();
+
+            //Load nested objects/values
+            if (((td.ContainsNestedColumns && forceLoadNestedObjects) || td.ContainsNestedColumnsAutoLoad || cnx.Configuration.ForceAutoLoadNestedObjects) && result != null)
+            {
+                LoadNestedValues(cnx, forceLoadNestedObjects, ref result);
+            }
+
+            if (cnx.Configuration.EnableRamCache) RamCache.Set(RamCache.GetKey<T>(), result);
+
+            sq.Dispose();
+            return result;
+        }
+
+        public List<T> SelectLimit<T>(OpenOrmDbConnection cnx, Expression<Func<T, bool>> predicate, bool forceLoadNestedObjects = false, int page = -1, int elements = -1)
+        {
+            if (cnx.Configuration.EnableRamCache && RamCache.Exists(RamCache.GetKey<T>(predicate))) return (List<T>)RamCache.Get(RamCache.GetKey<T>(predicate));
+
+            TableDefinition td = TableDefinition.Get<T>(cnx);
+            string sql = $"SELECT {td.GetFieldsStr()} FROM {GetTableName<T>()} WHERE ";
+
+            sql += predicate.ToSqlWhere(td, out List<SqlParameterItem> Parameters);
+
+            if (page > 0 && elements > 0)
+            {
+                sql += $" LIMIT {elements} OFFSET {elements * (page - 1)} ";
+            }
+
+            SqlQuery sq = new SqlQuery(cnx, sql, SqlQueryType.Sql);
+            Parameters.ForEach(x => sq.AddParameter(x.Name, x.Value, x.SqlDbType));
+            List<T> result = sq.ReadToObjectList<T>();
+
+            //Load nested objects/values
+            if (((td.ContainsNestedColumns && forceLoadNestedObjects) || td.ContainsNestedColumnsAutoLoad || cnx.Configuration.ForceAutoLoadNestedObjects) && result != null)
+            {
+                LoadNestedValues(cnx, forceLoadNestedObjects, ref result);
+            }
+
+            if (cnx.Configuration.EnableRamCache) RamCache.Set(RamCache.GetKey<T>(predicate), result);
+
+            sq.Dispose();
+            return result;
+        }
+
         public List<T> Select<T>(OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false)
         {
             if (cnx.Configuration.EnableRamCache && RamCache.Exists(RamCache.GetKey<T>())) return (List<T>)RamCache.Get(RamCache.GetKey<T>());
 
             TableDefinition td = TableDefinition.Get<T>(cnx);
             string sql = $"SELECT {td.GetFieldsStr()} FROM {GetTableName<T>()};";
+
             SqlQuery sq = new SqlQuery(cnx, sql, SqlQueryType.Sql);
             List<T> result = sq.ReadToObjectList<T>();
 
