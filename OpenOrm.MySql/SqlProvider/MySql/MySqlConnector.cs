@@ -124,6 +124,7 @@ namespace OpenOrm.SqlProvider.MySql
                 cmd.Prepare();
             }
 
+            //string rawQuery = GetRawQuery(cmd);
 
             //cmd.Prepare();
             await cmd.ExecuteNonQueryAsync();
@@ -149,7 +150,16 @@ namespace OpenOrm.SqlProvider.MySql
 
 
 
-
+        //Retourne la requete SQL complète (pour debug)
+        static string GetRawQuery(MySqlCommand command)
+        {
+            var sb = new StringBuilder(command.CommandText);
+            foreach (MySqlParameter p in command.Parameters)
+            {
+                sb = sb.Replace(p.ParameterName, "'" + p.Value.ToString() + "'");
+            }
+            return sb.ToString();
+        }
 
 
 
@@ -281,6 +291,7 @@ namespace OpenOrm.SqlProvider.MySql
                 cmd.Prepare();
             }
 
+            //string rawQuery = GetRawQuery(cmd);
 
             //cmd.Prepare();
             MySqlDataReader dr = cmd.ExecuteReader();

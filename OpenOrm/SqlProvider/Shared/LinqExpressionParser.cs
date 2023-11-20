@@ -60,9 +60,24 @@ namespace OpenOrm.SqlProvider.Shared
                 {
                     return result + " )";
                 }
+                if(bexp.Right.ToString() == "null")
+                {
+                    switch (bexp.NodeType)
+                    {
+                        case ExpressionType.Equal:
+                            result += " is null ";
+                            break;
+                        case ExpressionType.NotEqual:
+                            result += " is not null ";
+                            break;
+                    }
+                }
+                else
+                {
+                    result += NodeTypeToString(bexp.NodeType);
+                    result += RecurseExp(bexp.Right, td);
+                }
 
-                result += NodeTypeToString(bexp.NodeType);
-                result += RecurseExp(bexp.Right, td);
                 result += ")";
             }
             else if (exp is UnaryExpression)
@@ -73,6 +88,20 @@ namespace OpenOrm.SqlProvider.Shared
                     MemberExpression mexp = (MemberExpression)uexp.Operand;
                     if (mexp.Member is PropertyInfo)
                     {
+                        try
+                        {
+                            var rightValue = Expression.Lambda(exp).Compile().DynamicInvoke();
+                            if(rightValue is DateTime)
+                            {
+                                rightValue = ((DateTime)rightValue).ToString("yyyy-MM-dd HH:mm:ss");
+                            }
+                            result += $"'{rightValue}'";
+                            return result;
+                        }
+                        catch (Exception ex)
+                        {
+                        }
+
                         PropertyInfo pi = ((PropertyInfo)mexp.Member);
                         if (WithBrackets)
                         {
