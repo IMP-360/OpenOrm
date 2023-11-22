@@ -101,6 +101,7 @@ namespace OpenOrm.SqlProvider.Shared
 
         #region Update
         void Update<T>(OpenOrmDbConnection cnx, T model, TableDefinition td = null);
+        void Update<T>(OpenOrmDbConnection cnx, object attributs, TableDefinition td = null);
         #endregion
 
         #region Delete

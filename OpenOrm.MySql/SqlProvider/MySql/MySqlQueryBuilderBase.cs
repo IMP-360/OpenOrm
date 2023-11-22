@@ -13,6 +13,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 //using System.Security.Policy;
 
 namespace OpenOrm.SqlProvider.MySql
@@ -706,6 +707,68 @@ namespace OpenOrm.SqlProvider.MySql
 
         #region Update
         //todo
+
+        public void Update<T>(OpenOrmDbConnection cnx, object attributs, TableDefinition td = null)
+        {
+            string sql = "";
+            List<string> updateFields = new List<string>();
+            List<string> keyFields = new List<string>();
+            List<SqlParameterItem> parameters = new List<SqlParameterItem>();
+            if (td == null) td = TableDefinition.Get<T>(cnx);
+
+            foreach (ColumnDefinition cd in td.Columns)
+            {
+                try
+                {
+                    PropertyInfo propertyInfo = attributs.GetType().GetProperty(cd.Name);
+                    if (propertyInfo != null)
+                    {
+                        // Récupération de la valeur de la propriété "id"
+                        var value = propertyInfo.GetValue(attributs);
+
+                        if (value == null && cd.IsNotNullColumn && cd.HasDefaultValue)
+                        {
+                            value = cd.DefaultValue;
+                        }
+                        if (value == null)
+                        {
+                            value = DBNull.Value;
+                        }
+
+                        string paramName = $"@p{parameters.Count}";
+
+                        if (cd.IsPrimaryKey)
+                        {
+                            keyFields.Add($"`{cd.Name}`={paramName}");
+                        }
+                        else
+                        {
+                            updateFields.Add($"`{cd.Name}`={paramName}");
+                        }
+                        parameters.Add(new SqlParameterItem { Name = paramName, Value = value, SqlDbType = OpenOrmTools.ToSqlDbType(cd.PropertyType) });
+
+                    }
+                }
+                catch(Exception ex)
+                {
+
+                }
+            }
+
+            sql = $"UPDATE `{GetTableName<T>()}` SET {string.Join(",", updateFields)}";
+
+            if (keyFields.Count > 0)
+            {
+                sql += $" WHERE {string.Join(" AND ", keyFields)} ";
+            }
+
+            sql += ";";
+
+            SqlQuery sq = new SqlQuery();
+            parameters.ForEach(x => sq.AddParameter(x.Name, x.Value, x.SqlDbType));
+            sq.ExecuteSql(cnx, sql);
+            sq.Dispose();
+        }
         public void Update<T>(OpenOrmDbConnection cnx, T model, TableDefinition td = null)
         {
             string sql = "";

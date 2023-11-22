@@ -359,6 +359,11 @@ namespace OpenOrm.MySql
             if (model != null)
                 GetQueryBuilder(cnx).Update<T>(cnx, model);
         }
+        public static void Update<T>(this OpenOrmDbConnection cnx, object attributs)
+        {
+            if (attributs != null)
+                GetQueryBuilder(cnx).Update<T>(cnx, attributs);
+        }
 
         public static void Update<T>(this OpenOrmDbConnection cnx, List<T> models)
         {
