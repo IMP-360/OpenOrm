@@ -807,8 +807,8 @@ namespace OpenOrm.SqlProvider.Shared
         {
             if (!disposedValue)
             {
-                if (SR != null && !SR.disposedValue)
-                    SR.Dispose();
+                //if (SR != null && !SR.disposedValue)
+                //    SR.Dispose();
                 disposedValue = true;
             }
         }
