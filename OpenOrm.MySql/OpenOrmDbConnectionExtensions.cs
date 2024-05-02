@@ -249,14 +249,14 @@ namespace OpenOrm.MySql
 
         #region Select/Async
 
-        public static List<T> SelectLimit<T>(this OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false, int page = -1, int elements = -1)
+        public static List<T> SelectLimit<T>(this OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false, int page = -1, int elements = -1, string orderBy="")
         {
-            return GetQueryBuilder(cnx).SelectLimit<T>(cnx, forceLoadNestedObjects, page, elements);
+            return GetQueryBuilder(cnx).SelectLimit<T>(cnx, forceLoadNestedObjects, page, elements, orderBy);
         }
 
-        public static List<T> SelectLimit<T>(this OpenOrmDbConnection cnx, Expression<Func<T, bool>> predicate, bool forceLoadNestedObjects = false, int page = -1, int elements = -1)
+        public static List<T> SelectLimit<T>(this OpenOrmDbConnection cnx, Expression<Func<T, bool>> predicate, bool forceLoadNestedObjects = false, int page = -1, int elements = -1,string orderBy = "")
         {
-            return GetQueryBuilder(cnx).SelectLimit<T>(cnx, predicate, forceLoadNestedObjects, page, elements);
+            return GetQueryBuilder(cnx).SelectLimit<T>(cnx, predicate, forceLoadNestedObjects, page, elements, orderBy);
         }
         public static List<T> Select<T>(this OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false)
         {

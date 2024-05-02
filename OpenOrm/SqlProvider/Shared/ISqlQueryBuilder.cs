@@ -78,9 +78,9 @@ namespace OpenOrm.SqlProvider.Shared
         #endregion
 
         #region Select
-        List<T> SelectLimit<T>(OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false, int page = -1, int elements = -1);
+        List<T> SelectLimit<T>(OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false, int page = -1, int elements = -1,string orderBy="");
 
-        List<T> SelectLimit<T>(OpenOrmDbConnection cnx, Expression<Func<T, bool>> predicate, bool forceLoadNestedObjects = false, int page = -1, int elements = -1);
+        List<T> SelectLimit<T>(OpenOrmDbConnection cnx, Expression<Func<T, bool>> predicate, bool forceLoadNestedObjects = false, int page = -1, int elements = -1, string orderBy="");
 
         List<T> Select<T>(OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false);
 

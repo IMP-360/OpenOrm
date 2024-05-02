@@ -451,12 +451,17 @@ namespace OpenOrm.SqlProvider.SQLite
 
         #region Select
 
-        public List<T> SelectLimit<T>(OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false, int page = -1, int elements = -1)
+        public List<T> SelectLimit<T>(OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false, int page = -1, int elements = -1, string orderBy = "")
         {
             if (cnx.Configuration.EnableRamCache && RamCache.Exists(RamCache.GetKey<T>())) return (List<T>)RamCache.Get(RamCache.GetKey<T>());
 
             TableDefinition td = TableDefinition.Get<T>(cnx);
             string sql = $"SELECT {td.GetFieldsStr()} FROM {GetTableName<T>()}";
+
+            if (!string.IsNullOrEmpty(orderBy))
+            {
+                sql += $" ORDER BY {orderBy} ";
+            }
 
             if (page > 0 && elements > 0)
             {
@@ -482,7 +487,7 @@ namespace OpenOrm.SqlProvider.SQLite
             return result;
         }
 
-        public List<T> SelectLimit<T>(OpenOrmDbConnection cnx, Expression<Func<T, bool>> predicate, bool forceLoadNestedObjects = false, int page = -1, int elements = -1)
+        public List<T> SelectLimit<T>(OpenOrmDbConnection cnx, Expression<Func<T, bool>> predicate, bool forceLoadNestedObjects = false, int page = -1, int elements = -1, string orderBy = "")
         {
             if (cnx.Configuration.EnableRamCache && RamCache.Exists(RamCache.GetKey<T>(predicate))) return (List<T>)RamCache.Get(RamCache.GetKey<T>(predicate));
 
@@ -490,6 +495,11 @@ namespace OpenOrm.SqlProvider.SQLite
             string sql = $"SELECT {td.GetFieldsStr()} FROM {GetTableName<T>()} WHERE ";
 
             sql += predicate.ToSqlWhere(td, out List<SqlParameterItem> Parameters);
+
+            if (!string.IsNullOrEmpty(orderBy))
+            {
+                sql += $" ORDER BY {orderBy} ";
+            }
 
             if (page > 0 && elements > 0)
             {

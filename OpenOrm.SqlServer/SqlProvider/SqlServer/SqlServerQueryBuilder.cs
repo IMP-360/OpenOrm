@@ -679,7 +679,7 @@ namespace OpenOrm.SqlProvider.SqlServer
 
         #region Select
 
-        public List<T> SelectLimit<T>(OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false, int page = -1, int elements = -1)
+        public List<T> SelectLimit<T>(OpenOrmDbConnection cnx, bool forceLoadNestedObjects = false, int page = -1, int elements = -1, string orderBy = "")
         {
             if (cnx.Configuration.EnableRamCache && CoreTools.RamCache.Exists(CoreTools.RamCache.GetKey<T>())) return (List<T>)CoreTools.RamCache.Get(CoreTools.RamCache.GetKey<T>());
             TableDefinition td = TableDefinition.Get<T>(cnx);
@@ -693,6 +693,11 @@ namespace OpenOrm.SqlProvider.SqlServer
             //string fields = $"[{string.Join("],[", td.Columns.Select(x => x.Name))}]";
             //string sql = $"SELECT {fields} FROM {GetTableName<T>()};";
             string sql = $"SELECT {td.GetFieldsStr()} FROM {GetTableName<T>()}";
+
+            if (!string.IsNullOrEmpty(orderBy))
+            {
+                sql += $" ORDER BY {orderBy} ";
+            }
 
             if (page > 0 && elements > 0)
             {
@@ -716,12 +721,18 @@ namespace OpenOrm.SqlProvider.SqlServer
             return result;
         }
 
-        public List<T> SelectLimit<T>(OpenOrmDbConnection cnx, Expression<Func<T, bool>> predicate, bool forceLoadNestedObjects = false, int page = -1, int elements = -1)
+        public List<T> SelectLimit<T>(OpenOrmDbConnection cnx, Expression<Func<T, bool>> predicate, bool forceLoadNestedObjects = false, int page = -1, int elements = -1, string orderBy = "")
         {
             if (cnx.Configuration.EnableRamCache && CoreTools.RamCache.Exists(CoreTools.RamCache.GetKey<T>(predicate))) return (List<T>)CoreTools.RamCache.Get(CoreTools.RamCache.GetKey<T>(predicate));
             TableDefinition td = TableDefinition.Get<T>(cnx);
             //string fields = string.Join(",", OpenOrmTools.GetFieldNames<T>());
             string sql = $"SELECT {td.GetFieldsStr()} FROM {GetTableName<T>()} ";
+
+            //TODO: check is le order by est au bon endroit dans une requete en SQL Server
+            if (!string.IsNullOrEmpty(orderBy))
+            {
+                sql += $" ORDER BY {orderBy} ";
+            }
 
             if (page > 0 && elements > 0)
             {
