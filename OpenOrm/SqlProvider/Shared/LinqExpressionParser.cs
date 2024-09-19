@@ -103,13 +103,34 @@ namespace OpenOrm.SqlProvider.Shared
                         }
 
                         PropertyInfo pi = ((PropertyInfo)mexp.Member);
-                        if (WithBrackets)
+
+                        var pi_table_name = string.Empty;
+                        var declaringTypeFullName = pi.DeclaringType.FullName;
+                        var declaringAssembly = pi.DeclaringType.Assembly;
+                        // Essayez de charger le type en utilisant l'assembly
+                        var object_declaringType = declaringAssembly.GetType(declaringTypeFullName);
+                        if (object_declaringType == null)
                         {
-                            result += $"{LeftBracket}{pi.DeclaringType.Name.ToLower()}{RightBracket}.{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket}";
+                            // Si le type est toujours null, essayez de le charger en utilisant une autre méthode
+                            object_declaringType = Type.GetType(declaringTypeFullName);
+                        }
+                        if (object_declaringType != null)
+                        {
+                            pi_table_name = OpenOrmTools.GetTableName(object_declaringType);
+                            Console.WriteLine($"Table Name: {pi_table_name}");
                         }
                         else
                         {
-                            result += pi.DeclaringType.Name.ToLower() + "." + td.GetColumnNameFor(pi);
+                            Console.WriteLine($"Type '{declaringTypeFullName}' not found.");
+                        }
+
+                        if (WithBrackets)
+                        {
+                            result += $"{LeftBracket}{pi_table_name}{RightBracket}.{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket}";
+                        }
+                        else
+                        {
+                            result += pi_table_name + "." + td.GetColumnNameFor(pi);
                         }
                         if (pi.PropertyType == typeof(bool))
                         {
@@ -153,22 +174,43 @@ namespace OpenOrm.SqlProvider.Shared
                 {
                     PropertyInfo pi = ((PropertyInfo)mexp.Member);
 
+                    var pi_table_name = string.Empty;
+                    var declaringTypeFullName = pi.DeclaringType.FullName;
+                    var declaringAssembly = pi.DeclaringType.Assembly;
+                    // Essayez de charger le type en utilisant l'assembly
+                    var object_declaringType = declaringAssembly.GetType(declaringTypeFullName);
+                    if (object_declaringType == null)
+                    {
+                        // Si le type est toujours null, essayez de le charger en utilisant une autre méthode
+                        object_declaringType = Type.GetType(declaringTypeFullName);
+                    }
+                    if (object_declaringType != null)
+                    {
+                        pi_table_name = OpenOrmTools.GetTableName(object_declaringType);
+                        Console.WriteLine($"Table Name: {pi_table_name}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Type '{declaringTypeFullName}' not found.");
+                    }
+
                     if (mexp.NodeType == ExpressionType.MemberAccess && pi.PropertyType == typeof(bool))
                     {
                         if (WithBrackets)
                         {
-                            result += $"{LeftBracket}{pi.DeclaringType.Name.ToLower()}{RightBracket}.{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket} = 1";
+                            result += $"{LeftBracket}{pi_table_name}{RightBracket}.{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket} = 1";
                         }
                         else
                         {
-                            result += $"{pi.DeclaringType.Name.ToLower()}.{td.GetColumnNameFor(pi)} = 1";
+                            result += $"{pi_table_name}.{td.GetColumnNameFor(pi)} = 1";
                         }
                     }
                     else if ((mexp.NodeType == ExpressionType.MemberAccess && mexp.Member.Name == "Now") || (mexp.Expression.NodeType == ExpressionType.MemberAccess || mexp.Expression.NodeType == ExpressionType.Constant))
                     {
                         try
                         {
-                            var value = GetValue(mexp.Expression);
+                            var value = GetValue(mexp);
+                            //var value = GetValue(mexp.Expression);
                             string paramName = $"@p{Parameters.Count}";
 
                             if (value is bool)
@@ -185,11 +227,11 @@ namespace OpenOrm.SqlProvider.Shared
                         {
                             if (WithBrackets)
                             {
-                                result += $"{LeftBracket}{pi.DeclaringType.Name.ToLower()}{RightBracket}.{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket}";
+                                result += $"{LeftBracket}{pi_table_name}{RightBracket}.{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket}";
                             }
                             else
                             {
-                                result += pi.DeclaringType.Name.ToLower() + "." + td.GetColumnNameFor(pi);
+                                result += pi_table_name + "." + td.GetColumnNameFor(pi);
                             }
                         }
                     }
@@ -197,11 +239,11 @@ namespace OpenOrm.SqlProvider.Shared
                     {
                         if (WithBrackets)
                         {
-                            result += $"{LeftBracket}{pi.DeclaringType.Name.ToLower()}{RightBracket}.{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket}";
+                            result += $"{LeftBracket}{pi_table_name}{RightBracket}.{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket}";
                         }
                         else
                         {
-                            result += pi.DeclaringType.Name.ToLower()+"."+td.GetColumnNameFor(pi);
+                            result += pi_table_name + "."+td.GetColumnNameFor(pi);
                         }
                     }
                 }
@@ -263,6 +305,7 @@ namespace OpenOrm.SqlProvider.Shared
 
             return result;
         }
+
 
         internal string ResolveMethodCallExpression(Expression exp, TableDefinition td, ExpressionType exptype)
         {
