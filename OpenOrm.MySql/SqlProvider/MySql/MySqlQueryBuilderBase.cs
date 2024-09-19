@@ -527,11 +527,41 @@ namespace OpenOrm.SqlProvider.MySql
             return result;
         }
 
+        private bool PredicateContainsColumn<T>(Expression<Func<T, bool>> predicate, Type foreignType, string foreignKeyProperty)
+        {
+            var visitor = new ForeignKeyExpressionVisitor(foreignType, foreignKeyProperty);
+            visitor.Visit(predicate);
+            return visitor.ContainsForeignKey;
+        }
+        private class ForeignKeyExpressionVisitor : ExpressionVisitor
+        {
+            private readonly Type _foreignType;
+            private readonly string _foreignKeyProperty;
+            public bool ContainsForeignKey { get; private set; }
+
+            public ForeignKeyExpressionVisitor(Type foreignType, string foreignKeyProperty)
+            {
+                _foreignType = foreignType;
+                _foreignKeyProperty = foreignKeyProperty;
+                ContainsForeignKey = false;
+            }
+
+            protected override Expression VisitMember(MemberExpression node)
+            {
+                if (node.Member.DeclaringType == _foreignType)
+                {
+                    ContainsForeignKey = true;
+                }
+                return base.VisitMember(node);
+            }
+        }
+
         public List<T> SelectLimit<T>(OpenOrmDbConnection cnx, Expression<Func<T, bool>> predicate, bool forceLoadNestedObjects = false, int page = -1, int elements = -1, string orderBy = "")
         {
             if (cnx.Configuration.EnableRamCache && RamCache.Exists(RamCache.GetKey<T>(predicate))) return (List<T>)RamCache.Get(RamCache.GetKey<T>(predicate));
 
             TableDefinition td = TableDefinition.Get<T>(cnx);
+                       
 
             StringBuilder joins_sql = new StringBuilder();
             // Ajout des jointures éventuelles
@@ -540,19 +570,23 @@ namespace OpenOrm.SqlProvider.MySql
                 var foreignKeyAttr = column.PropertyInfo.GetCustomAttribute<DbForeignKey>();
                 if (foreignKeyAttr != null)
                 {
-                    TableDefinition foreignTableDef = TableDefinition.Get(foreignKeyAttr.ParentType, cnx);
-                    joins_sql.Append(" LEFT JOIN ");
-                    joins_sql.Append(foreignTableDef.TableName);
-                    joins_sql.Append(" as ");
-                    joins_sql.Append(foreignTableDef.TableName);
-                    joins_sql.Append(" ON ");
-                    joins_sql.Append(td.TableName);
-                    joins_sql.Append(".");
-                    joins_sql.Append(column.Name);
-                    joins_sql.Append(" = ");
-                    joins_sql.Append(foreignTableDef.TableName);
-                    joins_sql.Append(".");
-                    joins_sql.Append(foreignKeyAttr.ParentPrimaryKeyProperty);
+                    // Vérifiez si le predicate contient une référence à la colonne de la table étrangère
+                    if (PredicateContainsColumn(predicate, foreignKeyAttr.ParentType, foreignKeyAttr.ParentPrimaryKeyProperty))
+                    {
+                        TableDefinition foreignTableDef = TableDefinition.Get(foreignKeyAttr.ParentType, cnx);
+                        joins_sql.Append(" LEFT JOIN ");
+                        joins_sql.Append(foreignTableDef.TableName);
+                        joins_sql.Append(" as ");
+                        joins_sql.Append(foreignTableDef.TableName);
+                        joins_sql.Append(" ON ");
+                        joins_sql.Append(td.TableName);
+                        joins_sql.Append(".");
+                        joins_sql.Append(column.Name);
+                        joins_sql.Append(" = ");
+                        joins_sql.Append(foreignTableDef.TableName);
+                        joins_sql.Append(".");
+                        joins_sql.Append(foreignKeyAttr.ParentPrimaryKeyProperty);
+                    }
                 }
             }
 
