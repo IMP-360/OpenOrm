@@ -191,11 +191,11 @@ namespace OpenOrm.Schema
         {
 			if(withBrackets)
             {
-				return leftBracket + string.Join($"{rightBracket},{leftBracket}", Columns.Where(x => x.ExistsInDb).Select(x => x.Name)) + rightBracket;
+				return  string.Join($",", Columns.Where(x => x.ExistsInDb).Select(x =>  $"{rightBracket}{TableName}{leftBracket}.{rightBracket}{x.Name}{leftBracket}"));
 			}
 			else
             {
-				return string.Join(",", Columns.Where(x => x.ExistsInDb).Select(x => x.Name));
+				return  string.Join(",", Columns.Where(x => x.ExistsInDb).Select(x => TableName + "." + x.Name));
 			}
         }
 

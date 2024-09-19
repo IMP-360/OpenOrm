@@ -532,7 +532,31 @@ namespace OpenOrm.SqlProvider.MySql
             if (cnx.Configuration.EnableRamCache && RamCache.Exists(RamCache.GetKey<T>(predicate))) return (List<T>)RamCache.Get(RamCache.GetKey<T>(predicate));
 
             TableDefinition td = TableDefinition.Get<T>(cnx);
-            string sql = $"SELECT {td.GetFieldsStr(true, '`', '`')} FROM `{GetTableName<T>()}` WHERE ";
+
+            StringBuilder joins_sql = new StringBuilder();
+            // Ajout des jointures éventuelles
+            foreach (var column in td.Columns)
+            {
+                var foreignKeyAttr = column.PropertyInfo.GetCustomAttribute<DbForeignKey>();
+                if (foreignKeyAttr != null)
+                {
+                    TableDefinition foreignTableDef = TableDefinition.Get(foreignKeyAttr.ParentType, cnx);
+                    joins_sql.Append(" LEFT JOIN ");
+                    joins_sql.Append(foreignTableDef.TableName);
+                    joins_sql.Append(" as ");
+                    joins_sql.Append(foreignTableDef.TableName);
+                    joins_sql.Append(" ON ");
+                    joins_sql.Append(td.TableName);
+                    joins_sql.Append(".");
+                    joins_sql.Append(column.Name);
+                    joins_sql.Append(" = ");
+                    joins_sql.Append(foreignTableDef.TableName);
+                    joins_sql.Append(".");
+                    joins_sql.Append(foreignKeyAttr.ParentPrimaryKeyProperty);
+                }
+            }
+
+            string sql = $"SELECT {td.GetFieldsStr(true, '`', '`')} FROM `{GetTableName<T>()}` {joins_sql} WHERE ";
 
             sql += predicate.ToSqlWhere(td, out List<SqlParameterItem> Parameters);
 

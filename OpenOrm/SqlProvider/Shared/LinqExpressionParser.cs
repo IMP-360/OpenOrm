@@ -105,11 +105,11 @@ namespace OpenOrm.SqlProvider.Shared
                         PropertyInfo pi = ((PropertyInfo)mexp.Member);
                         if (WithBrackets)
                         {
-                            result += $"{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket}";
+                            result += $"{LeftBracket}{pi.DeclaringType.Name.ToLower()}{RightBracket}.{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket}";
                         }
                         else
                         {
-                            result += td.GetColumnNameFor(pi);
+                            result += pi.DeclaringType.Name.ToLower() + "." + td.GetColumnNameFor(pi);
                         }
                         if (pi.PropertyType == typeof(bool))
                         {
@@ -157,37 +157,51 @@ namespace OpenOrm.SqlProvider.Shared
                     {
                         if (WithBrackets)
                         {
-                            result += $"{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket} = 1";
+                            result += $"{LeftBracket}{pi.DeclaringType.Name.ToLower()}{RightBracket}.{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket} = 1";
                         }
                         else
                         {
-                            result += $"{td.GetColumnNameFor(pi)} = 1";
+                            result += $"{pi.DeclaringType.Name.ToLower()}.{td.GetColumnNameFor(pi)} = 1";
                         }
                     }
                     else if ((mexp.NodeType == ExpressionType.MemberAccess && mexp.Member.Name == "Now") || (mexp.Expression.NodeType == ExpressionType.MemberAccess || mexp.Expression.NodeType == ExpressionType.Constant))
                     {
-                        var value = GetValue(mexp);
-                        string paramName = $"@p{Parameters.Count}";
+                        try
+                        {
+                            var value = GetValue(mexp.Expression);
+                            string paramName = $"@p{Parameters.Count}";
 
-                        if (value is bool)
-                        {
-                            Parameters.Add(new SqlParameterItem { Name = paramName, Value = (bool)value ? "1" : "0", SqlDbType = OpenOrmTools.ToSqlDbType(pi) });
+                            if (value is bool)
+                            {
+                                Parameters.Add(new SqlParameterItem { Name = paramName, Value = (bool)value ? "1" : "0", SqlDbType = OpenOrmTools.ToSqlDbType(pi) });
+                            }
+                            else
+                            {
+                                Parameters.Add(new SqlParameterItem { Name = paramName, Value = value, SqlDbType = OpenOrmTools.ToSqlDbType(pi) });
+                            }
+                            result += paramName;
                         }
-                        else
+                        catch(Exception ex)
                         {
-                            Parameters.Add(new SqlParameterItem { Name = paramName, Value = value, SqlDbType = OpenOrmTools.ToSqlDbType(pi) });
+                            if (WithBrackets)
+                            {
+                                result += $"{LeftBracket}{pi.DeclaringType.Name.ToLower()}{RightBracket}.{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket}";
+                            }
+                            else
+                            {
+                                result += pi.DeclaringType.Name.ToLower() + "." + td.GetColumnNameFor(pi);
+                            }
                         }
-                        result += paramName;
                     }
                     else
                     {
                         if (WithBrackets)
                         {
-                            result += $"{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket}";
+                            result += $"{LeftBracket}{pi.DeclaringType.Name.ToLower()}{RightBracket}.{LeftBracket}{td.GetColumnNameFor(pi)}{RightBracket}";
                         }
                         else
                         {
-                            result += td.GetColumnNameFor(pi);
+                            result += pi.DeclaringType.Name.ToLower()+"."+td.GetColumnNameFor(pi);
                         }
                     }
                 }
