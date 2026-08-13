@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
@@ -30,6 +30,14 @@ namespace OpenOrm.SqlProvider.MySql
                     case "int32":
                     case "int16":
                     case "short":
+                    case "uint16":
+                    case "ushort":
+                    case "uint32":
+                    case "uint":
+                    case "uint64":
+                    case "ulong":
+                    case "byte":
+                    case "sbyte":
                         formattedValue = $"{value}";
                         break;
                     case "decimal":
@@ -77,28 +85,43 @@ namespace OpenOrm.SqlProvider.MySql
                     if (size == -1) return "LONGTEXT";
                     if (size > 0) return $"VARCHAR({size})";
                     else return "TEXT";
+                case SqlDbType.TinyInt:
+                    return "TINYINT";
+                case SqlDbType.SmallInt:
+                    return "SMALLINT";
                 case SqlDbType.Int:
                     return "INT";
                 case SqlDbType.BigInt:
                     return "BIGINT";
+                case SqlDbType.Date:
+                    return "DATE";
                 case SqlDbType.DateTime:
+                case SqlDbType.DateTime2:
                     return "DATETIME";
+                case SqlDbType.Time:
+                case SqlDbType.Timestamp:
+                    return "TIME";
                 case SqlDbType.Bit:
                     return "BIT";
                 case SqlDbType.Binary:
+                case SqlDbType.VarBinary:
                     if (size > 0) return $"VARBINARY({size})";
                     else return "VARBINARY(8000)";
                 case SqlDbType.NChar:
-                    return "NCHAR";
+                    return size > 0 ? $"NCHAR({size})" : "NCHAR(1)";
+                case SqlDbType.Char:
+                    return size > 0 ? $"CHAR({size})" : "CHAR(1)";
                 case SqlDbType.Decimal:
                     if (scale > 0 && precision > 0) return $"DECIMAL({scale},{precision})";
                     else if (scale > 0) return $"DECIMAL({scale},2)";
                     else if (precision > 0) return $"DECIMAL(16,{precision})";
                     else return "DECIMAL(16,2)";
                 case SqlDbType.Float:
+                    return "DOUBLE";
+                case SqlDbType.Real:
                     return "FLOAT";
-                case SqlDbType.Timestamp:
-                    return "TIME";
+                case SqlDbType.UniqueIdentifier:
+                    return "CHAR(36)";
             }
         }
 
@@ -126,21 +149,27 @@ namespace OpenOrm.SqlProvider.MySql
         {
             if (value is string)
                 return SqlDbType.NVarChar;
-            else if (value is int)
+            else if (value is ushort || value is int)
                 return SqlDbType.Int;
-            else if (value is long)
+            else if (value is uint || value is long || value is ulong)
                 return SqlDbType.BigInt;
+            else if (value is byte || value is sbyte)
+                return SqlDbType.TinyInt;
+            else if (value is short)
+                return SqlDbType.SmallInt;
             else if (value is bool)
                 return SqlDbType.Bit;
             else if (value is DateTime)
                 return SqlDbType.DateTime;
-            else if (value is Array[])
-                return SqlDbType.Binary;
+            else if (value is byte[])
+                return SqlDbType.VarBinary;
             else if (value is char)
                 return SqlDbType.NChar;
             else if (value is decimal)
                 return SqlDbType.Decimal;
             else if (value is float)
+                return SqlDbType.Real;
+            else if (value is double)
                 return SqlDbType.Float;
             else if (value is TimeSpan)
                 return SqlDbType.Timestamp;

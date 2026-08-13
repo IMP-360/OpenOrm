@@ -1,4 +1,4 @@
-﻿using OpenOrm.Extensions;
+using OpenOrm.Extensions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -214,7 +214,7 @@ namespace OpenOrm.Schema
                 //}
                 
                 PropertyType = pi.PropertyType;
-                IsNullableType = pi.PropertyType.Name.Contains("Nullable");
+                IsNullableType = Nullable.GetUnderlyingType(pi.PropertyType) != null;
                 DefaultValue = DBNull.Value;
                 IsNotNullColumn = pi.CustomAttributes.Any(x => x.AttributeType.Name == "DbNotNull");
                 IsPrimaryKey = pi.CustomAttributes.Any(x => x.AttributeType.Name == "DbPrimaryKey");

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -131,19 +131,26 @@ namespace OpenOrm.Extensions
                 case SqlDbType.DateTime2:
                     return DbType.DateTime;
                 case SqlDbType.Int:
-                case SqlDbType.SmallInt:
-                case SqlDbType.TinyInt:
                     return DbType.Int32;
+                case SqlDbType.SmallInt:
+                    return DbType.Int16;
+                case SqlDbType.TinyInt:
+                    return DbType.Byte;
                 case SqlDbType.BigInt:
                     return DbType.Int64;
                 case SqlDbType.Bit:
                     return DbType.Boolean;
                 case SqlDbType.Float:
+                    return DbType.Double;
+                case SqlDbType.Real:
+                    return DbType.Single;
                 case SqlDbType.Decimal:
                 case SqlDbType.Money:
-                case SqlDbType.Real:
                 case SqlDbType.SmallMoney:
                     return DbType.Decimal;
+                case SqlDbType.Time:
+                case SqlDbType.Timestamp:
+                    return DbType.Time;
                 case SqlDbType.Binary:
                 case SqlDbType.VarBinary:
                     return DbType.Binary;

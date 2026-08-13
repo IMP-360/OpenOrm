@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,28 +19,14 @@ namespace OpenOrm.Extensions
 
         public static Type GetBaseType(this PropertyInfo pi)
         {
-            if (pi.PropertyType.Name.Contains("Nullable"))
-            {
-                return GetBaseType(((FieldInfo[])((TypeInfo)pi.PropertyType).DeclaredFields)[1].FieldType);
-            }
-            if (pi.PropertyType.IsGenericType && pi.PropertyType.FullName.Contains("Generic.List"))
-            {
-                return pi.PropertyType.GetGenericArguments()[0];
-            }
-            else return pi.PropertyType;
+            if (pi == null) return null;
+            return GetBaseType(pi.PropertyType);
         }
 
         public static Type GetBaseType(this FieldInfo fi)
         {
-            if (fi.FieldType.Name.Contains("Nullable"))
-            {
-                return GetBaseType(((FieldInfo[])((TypeInfo)fi.FieldType).DeclaredFields)[1].FieldType);
-            }
-            if (fi.FieldType.IsGenericType && fi.FieldType.FullName.Contains("Generic.List"))
-            {
-                return fi.FieldType.GetGenericArguments()[0];
-            }
-            else return fi.FieldType;
+            if (fi == null) return null;
+            return GetBaseType(fi.FieldType);
         }
 
         public static Type GetBaseType<T>()
@@ -50,15 +36,13 @@ namespace OpenOrm.Extensions
 
         public static Type GetBaseType(this Type type)
         {
-            if (type.Name.Contains("Nullable"))
-            {
-                return GetBaseType(((FieldInfo[])((TypeInfo)type).DeclaredFields)[1].FieldType);
-            }
-            if (type.IsGenericType && type.FullName.Contains("Generic.List"))
+            if (type == null) return null;
+            type = Nullable.GetUnderlyingType(type) ?? type;
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
             {
                 return type.GetGenericArguments()[0];
             }
-            else return type;
+            return type;
         }
 
         public static List<string> ListProperties(this Type t)

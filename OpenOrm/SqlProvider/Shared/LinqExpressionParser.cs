@@ -117,7 +117,7 @@ namespace OpenOrm.SqlProvider.Shared
                         if (object_declaringType != null)
                         {
                             pi_table_name = OpenOrmTools.GetTableName(object_declaringType);
-                            Console.WriteLine($"Table Name: {pi_table_name}");
+                            //Console.WriteLine($"Table Name: {pi_table_name}");
                         }
                         else
                         {
@@ -187,7 +187,7 @@ namespace OpenOrm.SqlProvider.Shared
                     if (object_declaringType != null)
                     {
                         pi_table_name = OpenOrmTools.GetTableName(object_declaringType);
-                        Console.WriteLine($"Table Name: {pi_table_name}");
+                        //Console.WriteLine($"Table Name: {pi_table_name}");
                     }
                     else
                     {

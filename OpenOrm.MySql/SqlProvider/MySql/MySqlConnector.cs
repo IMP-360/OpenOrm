@@ -70,7 +70,9 @@ namespace OpenOrm.SqlProvider.MySql
                     cmd.Parameters.Add((MySqlParameter)Parameters[i]);
                 }
 
-                cmd.Prepare();
+                // Pas de Prepare explicite : OpenOrm crée une commande one-shot et MySqlConnector
+                // sait exécuter les paramètres directement via Execute*().
+                // cmd.Prepare();
             }
 
 
@@ -121,7 +123,9 @@ namespace OpenOrm.SqlProvider.MySql
                     cmd.Parameters.Add((MySqlParameter)Parameters[i]);
                 }
 
-                cmd.Prepare();
+                // Pas de Prepare explicite : OpenOrm crée une commande one-shot et MySqlConnector
+                // sait exécuter les paramètres directement via Execute*().
+                // cmd.Prepare();
             }
 
             //string rawQuery = GetRawQuery(cmd);
@@ -189,7 +193,9 @@ namespace OpenOrm.SqlProvider.MySql
                     cmd.Parameters.Add((MySqlParameter)Parameters[i]);
                 }
 
-                cmd.Prepare();
+                // Pas de Prepare explicite : OpenOrm crée une commande one-shot et MySqlConnector
+                // sait exécuter les paramètres directement via Execute*().
+                // cmd.Prepare();
             }
 
 
@@ -240,7 +246,9 @@ namespace OpenOrm.SqlProvider.MySql
                     cmd.Parameters.Add((MySqlParameter)Parameters[i]);
                 }
 
-                cmd.Prepare();
+                // Pas de Prepare explicite : OpenOrm crée une commande one-shot et MySqlConnector
+                // sait exécuter les paramètres directement via Execute*().
+                // cmd.Prepare();
             }
 
 
@@ -288,10 +296,13 @@ namespace OpenOrm.SqlProvider.MySql
                     cmd.Parameters.Add((MySqlParameter)Parameters[i]);
                 }
 
-                cmd.Prepare();
+                // Pas de Prepare explicite : OpenOrm crée une commande one-shot et MySqlConnector
+                // sait exécuter les paramètres directement via Execute*().
+                // cmd.Prepare();
             }
 
             //string rawQuery = GetRawQuery(cmd);
+            //Console.WriteLine(rawQuery);
 
             //cmd.Prepare();
             MySqlDataReader dr = cmd.ExecuteReader();
@@ -328,7 +339,9 @@ namespace OpenOrm.SqlProvider.MySql
                     cmd.Parameters.Add((MySqlParameter)Parameters[i]);
                 }
 
-                cmd.Prepare();
+                // Pas de Prepare explicite : OpenOrm crée une commande one-shot et MySqlConnector
+                // sait exécuter les paramètres directement via Execute*().
+                // cmd.Prepare();
             }
 
 

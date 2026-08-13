@@ -1,4 +1,4 @@
-﻿using OpenOrm.Configuration;
+using OpenOrm.Configuration;
 //using OpenOrm.SqlProvider.MySql;
 //using OpenOrm.SqlProvider.SQLite;
 //using OpenOrm.SqlProvider.SqlServer;
@@ -551,21 +551,27 @@ namespace OpenOrm.SqlProvider.Shared
         {
             if (value is string)
                 return SqlDbType.NVarChar;
-            else if (value is int)
+            else if (value is ushort || value is int)
                 return SqlDbType.Int;
-            else if (value is long)
+            else if (value is uint || value is long || value is ulong)
                 return SqlDbType.BigInt;
+            else if (value is byte || value is sbyte)
+                return SqlDbType.TinyInt;
+            else if (value is short)
+                return SqlDbType.SmallInt;
             else if (value is bool)
                 return SqlDbType.Bit;
             else if (value is DateTime)
                 return SqlDbType.DateTime;
-            else if (value is Array[])
-                return SqlDbType.Binary;
+            else if (value is byte[])
+                return SqlDbType.VarBinary;
             else if (value is char)
                 return SqlDbType.NChar;
             else if (value is decimal)
                 return SqlDbType.Decimal;
             else if (value is float)
+                return SqlDbType.Real;
+            else if (value is double)
                 return SqlDbType.Float;
             else if (value is TimeSpan)
                 return SqlDbType.Timestamp;

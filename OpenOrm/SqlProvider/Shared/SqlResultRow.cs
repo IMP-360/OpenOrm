@@ -1,6 +1,7 @@
 ﻿using OpenOrm.Schema;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -116,16 +117,23 @@ namespace OpenOrm.SqlProvider.Shared
                 if (td == null) td = TableDefinition.Get<T>(cnx);
                 foreach (ColumnDefinition cd in td.Columns)
                 {
-                    if (Row.ContainsKey(cd.Name) && Row[cd.Name] != null)
+                    if (!Row.ContainsKey(cd.Name))
+                        continue;
+
+                    object value = Row[cd.Name];
+                    if (value == null || value == DBNull.Value)
+                        continue;
+
+                    try
                     {
-                        if(cd.PropertyType.IsEnum)
-                        {
-                            cd.PropertyInfo.SetValue(oResult, Convert.ChangeType(Enum.Parse(cd.PropertyType, Row[cd.Name].ToString()), cd.PropertyType), null);
-                        }
-                        else
-                        {
-                            cd.PropertyInfo.SetValue(oResult, Convert.ChangeType(Row[cd.Name], cd.PropertyType.GetBaseType()), null);
-                        }
+                        cd.PropertyInfo.SetValue(oResult, ConvertForProperty(value, cd.PropertyType), null);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidCastException(
+                            $"OpenOrm: impossible de convertir la colonne '{cd.Name}' " +
+                            $"({value.GetType().FullName}) vers {cd.PropertyType.FullName}. " +
+                            $"Valeur='{value}'.", ex);
                     }
                 }
 
@@ -169,17 +177,23 @@ namespace OpenOrm.SqlProvider.Shared
                 if (td == null) td = TableDefinition.Get(t, cnx);
                 foreach (ColumnDefinition cd in td.Columns)
                 {
-                    if (Row.ContainsKey(cd.Name) && Row[cd.Name] != null)
+                    if (!Row.ContainsKey(cd.Name))
+                        continue;
+
+                    object value = Row[cd.Name];
+                    if (value == null || value == DBNull.Value)
+                        continue;
+
+                    try
                     {
-                        //cd.PropertyInfo.SetValue(oResult, Convert.ChangeType(Row[cd.Name], cd.PropertyType), null);
-                        if (cd.PropertyType.IsEnum)
-                        {
-                            cd.PropertyInfo.SetValue(oResult, Convert.ChangeType(Enum.Parse(cd.PropertyType, Row[cd.Name].ToString()), cd.PropertyType), null);
-                        }
-                        else
-                        {
-                            cd.PropertyInfo.SetValue(oResult, Convert.ChangeType(Row[cd.Name], cd.PropertyType.GetBaseType()), null);
-                        }
+                        cd.PropertyInfo.SetValue(oResult, ConvertForProperty(value, cd.PropertyType), null);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidCastException(
+                            $"OpenOrm: impossible de convertir la colonne '{cd.Name}' " +
+                            $"({value.GetType().FullName}) vers {cd.PropertyType.FullName}. " +
+                            $"Valeur='{value}'.", ex);
                     }
                 }
 
@@ -189,6 +203,69 @@ namespace OpenOrm.SqlProvider.Shared
             {
                 return null;
             }
+        }
+
+        private static object ConvertForProperty(object value, Type propertyType)
+        {
+            if (value == null || value == DBNull.Value)
+                return null;
+
+            Type targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+            Type sourceType = value.GetType();
+
+            // Rien à convertir si le provider retourne déjà le bon type.
+            if (targetType.IsAssignableFrom(sourceType))
+                return value;
+
+            if (targetType == typeof(string))
+                return value.ToString();
+
+            if (targetType == typeof(Guid))
+            {
+                if (value is Guid guid)
+                    return guid;
+                return Guid.Parse(value.ToString());
+            }
+
+            if (targetType.IsEnum)
+            {
+                if (value is string enumText)
+                    return Enum.Parse(targetType, enumText, true);
+
+                Type enumBaseType = Enum.GetUnderlyingType(targetType);
+                object enumValue = Convert.ChangeType(value, enumBaseType, CultureInfo.InvariantCulture);
+                return Enum.ToObject(targetType, enumValue);
+            }
+
+            if (targetType == typeof(bool))
+            {
+                if (value is string boolText)
+                {
+                    if (bool.TryParse(boolText, out bool parsedBool))
+                        return parsedBool;
+                    if (long.TryParse(boolText, NumberStyles.Integer, CultureInfo.InvariantCulture, out long parsedLong))
+                        return parsedLong != 0;
+                }
+
+                if (value is IConvertible)
+                    return Convert.ToInt64(value, CultureInfo.InvariantCulture) != 0;
+            }
+
+            // MySqlConnector peut retourner un MySqlDateTime si la connexion autorise les dates zéro.
+            // On évite une référence directe au provider dans le projet OpenOrm partagé.
+            if (targetType == typeof(DateTime) && sourceType.FullName == "MySqlConnector.MySqlDateTime")
+            {
+                MethodInfo getDateTime = sourceType.GetMethod("GetDateTime", Type.EmptyTypes);
+                if (getDateTime != null)
+                    return getDateTime.Invoke(value, null);
+            }
+
+            if (value is IConvertible)
+                return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
+
+            throw new InvalidCastException(
+                $"Le type source {sourceType.FullName} n'implémente pas IConvertible " +
+                $"et aucune conversion vers {targetType.FullName} n'est définie.");
         }
 
         #endregion

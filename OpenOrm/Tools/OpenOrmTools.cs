@@ -1,4 +1,4 @@
-﻿using OpenOrm.Extensions;
+using OpenOrm.Extensions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -448,98 +448,47 @@ namespace OpenOrm
 		#region ToSqlDbType
 		public static SqlDbType ToSqlDbType(PropertyInfo pi)
 		{
-			if (pi.PropertyType.Name.Contains("Nullable"))
-			{
-				Type baseType = ((FieldInfo[])((TypeInfo)pi.PropertyType).DeclaredFields)[1].FieldType;
-				return ToSqlDbType(baseType);
-			}
-			else return ToSqlDbType(pi.PropertyType);
+            if (pi == null) throw new ArgumentNullException(nameof(pi));
+            return ToSqlDbType(pi.PropertyType);
 		}
 
 		public static SqlDbType ToSqlDbType(FieldInfo fi)
 		{
-			if (fi.FieldType.Name.Contains("Nullable"))
-			{
-				Type baseType = ((FieldInfo[])((TypeInfo)fi.FieldType).DeclaredFields)[1].FieldType;
-				return ToSqlDbType(baseType);
-			}
-			else return ToSqlDbType(fi.FieldType);
+            if (fi == null) throw new ArgumentNullException(nameof(fi));
+            return ToSqlDbType(fi.FieldType);
 		}
 
 		public static SqlDbType ToSqlDbType<T>()
 		{
-			Type t = typeof(T);
-
-			if (t.Name.Contains("Nullable"))
-			{
-				Type baseType = ((FieldInfo[])((TypeInfo)t).DeclaredFields)[1].FieldType;
-				return ToSqlDbType(baseType);
-			}
-			else return ToSqlDbType(t);
+            return ToSqlDbType(typeof(T));
 		}
 
 		public static SqlDbType ToSqlDbType(Type t)
 		{
-			if (t == typeof(string))
-			{
-				return SqlDbType.NVarChar;
-			}
-			else if (t == typeof(int))
-			{
-				return SqlDbType.Int;
-			}
-			else if (t == typeof(long))
-			{
-				return SqlDbType.BigInt;
-			}
-			else if (t == typeof(bool))
-			{
-				return SqlDbType.Bit;
-			}
-			else if (t == typeof(DateTime))
-			{
-				return SqlDbType.DateTime;
-			}
-			else if (t == typeof(double))
-			{
-				return SqlDbType.Float;
-			}
-			else if (t == typeof(decimal))
-			{
-				return SqlDbType.Decimal;
-			}
-			else if (t == typeof(char))
-			{
-				return SqlDbType.Char;
-			}
-			else if (t == typeof(short))
-			{
-				return SqlDbType.SmallInt;
-			}
-			else if (t == typeof(byte))
-			{
-				return SqlDbType.TinyInt;
-			}
-			else if (t == typeof(byte[]))
-			{
-				return SqlDbType.VarBinary;
-			}
-			else if (t == typeof(object))
-			{
-				return SqlDbType.NVarChar;
-			}
-			else if (t == typeof(TimeSpan))
-			{
-				return SqlDbType.Time;
-			}
-			else if (t == typeof(Guid))
-			{
-				return SqlDbType.UniqueIdentifier;
-			}
-			else if(t.IsEnum)
-            {
-				return SqlDbType.BigInt;
-            }
+            if (t == null) throw new ArgumentNullException(nameof(t));
+
+            // Nullable<T> n'a pas une disposition de champs garantie entre les runtimes.
+            // Nullable.GetUnderlyingType est stable sur .NET Framework, .NET Standard et .NET 9.
+            t = Nullable.GetUnderlyingType(t) ?? t;
+
+			if (t == typeof(string)) return SqlDbType.NVarChar;
+            if (t == typeof(sbyte) || t == typeof(byte)) return SqlDbType.TinyInt;
+            if (t == typeof(short)) return SqlDbType.SmallInt;
+            // OpenOrm n'expose pas la notion UNSIGNED. On prend le type SQL signé supérieur
+            // afin d'éviter un dépassement pour ushort/uint.
+            if (t == typeof(ushort) || t == typeof(int)) return SqlDbType.Int;
+            if (t == typeof(uint) || t == typeof(long) || t == typeof(ulong)) return SqlDbType.BigInt;
+			if (t == typeof(bool)) return SqlDbType.Bit;
+			if (t == typeof(DateTime)) return SqlDbType.DateTime;
+            if (t == typeof(float)) return SqlDbType.Real;
+			if (t == typeof(double)) return SqlDbType.Float;
+			if (t == typeof(decimal)) return SqlDbType.Decimal;
+			if (t == typeof(char)) return SqlDbType.Char;
+			if (t == typeof(byte[])) return SqlDbType.VarBinary;
+			if (t == typeof(object)) return SqlDbType.NVarChar;
+			if (t == typeof(TimeSpan)) return SqlDbType.Time;
+			if (t == typeof(Guid)) return SqlDbType.UniqueIdentifier;
+			if (t.IsEnum) return SqlDbType.BigInt;
 
 			return SqlDbType.NVarChar;
 		}
